@@ -1,0 +1,12 @@
+# 忽略所有 .pyc 文件
+*.pyc
+
+# 忽略 build/ 目录
+build/
+venv/
+# 忽略 drill 目录
+drill/
+*.json
+*.xlsx
+*.xls
+*.csv

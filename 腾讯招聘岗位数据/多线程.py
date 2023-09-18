@@ -1,13 +1,13 @@
 import traceback
-
 from requests_html import HTMLSession
 from saveexcel.saveitem import ExcelSaver
-from saveexcel import convert_xls_to_xlsx
 from concurrent.futures import ThreadPoolExecutor
 
 
 class Spider:
-    def __init__(self, base_url, *, headers=None, proxy=None, cookies=None, proxy_url=None):
+    def __init__(
+        self, base_url, *, headers=None, proxy=None, cookies=None, proxy_url=None
+    ):
         self.base_url = base_url
         self.session = HTMLSession()
         self.headers = headers
@@ -15,11 +15,24 @@ class Spider:
         self.proxy = proxy
         self.cookies = cookies
         self.proxy_url = proxy_url
-        self.max_page = 100
-        self.excel_headers = ["项目名称", "项目地址", "项目描述", "项目标签", "项目语言", "项目stars", "项目更新时间"]
+        self.max_page = 20
+        self.excel_headers = [
+            "PostId",
+            "RecruitPostId",
+            "RecruitPostNam",
+            "CountryName",
+            "LocationName",
+            "CategoryName",
+            "Responsibility",
+            "LastUpdateTime",
+            "PostURL",
+            "SourceID",
+            "IsCollect",
+            "IsValid",
+        ]
         self.excel_saver = None
 
-    def fetch(self, url, max_outer_retries=15, params=None):
+    def fetch(self, url, max_outer_retries=10, params=None):
         """Makes an HTTP request and returns the HTML response."""
 
         def _make_request(proxies):
@@ -31,12 +44,15 @@ class Spider:
                     proxies=proxies,
                     cookies=self.cookies,
                     params=params,
-                    timeout=6
+                    timeout=6,
                 )
                 r.raise_for_status()
                 return r
             except Exception as e:
-                print(f"Error fetching {url} with params:{params} using {self.proxy}. Error: {e}")
+                print(
+                    f"Error fetching {url} with params:{params} using {self.proxy}. Error: {e}"
+                )
+                traceback.print_exc()
                 return None
 
         outer_retry_count = 0
@@ -61,35 +77,45 @@ class Spider:
             print("Reverting to initial proxy")
             outer_retry_count += 1
 
-        raise Exception(f"Reached maximum retry attempts for URL: {url} with params:{params}.")
+        raise Exception(
+            f"Reached maximum retry attempts for URL: {url} with params:{params}."
+        )
 
     def parse_first(self, response):
-        max_page = int(response.html.xpath("//div[@class='application-main']//a[@href='#100']/text()")[0])
+        max_page = int(
+            response.html.xpath(
+                "//div[@class='application-main']//a[@href='#100']/text()"
+            )[0]
+        )
         self.max_page = max_page
         data = self.parse(response)
         return data
 
     @staticmethod
     def parse(response):
-        data = []
-        for div in response.html.xpath("//div[@data-testid='results-list']/div"):
-            title = "".join(div.xpath(".//h3//a//text()"))
-            site = "https://github.com" + div.xpath(".//h3//a/@href")[0]
-            description = div.xpath('.//div[@class="Box-sc-g0xbh4-0 LjnbQ"]//text()')
-            description = [d.strip() for d in description]
-            description = "".join(description)
-            topics = div.xpath(".//div[@class = 'Box-sc-g0xbh4-0 frRVAS']//text()")
-            topics = [topic.strip() for topic in topics]
-            topics = str(topics) if topics else "无"
-            language = div.xpath(".//ul/li[last()-2]//text()")
-            language = language[0] if language else "无"
-            stars = div.xpath(".//ul/li[last()-1]//text()")[0]
-            update = div.xpath(".//ul/li[last()]//text()")
-            update = [u.strip() for u in update]
-            update = ' '.join(update)
-            data.append([title, site, description, topics, language, stars, update])
-        return data
-
+        try:
+            posts = response.json()["Data"]["Posts"]
+            # 检查posts是否为null或空列表
+            if not posts:
+                return None  # 返回None作为特殊标记
+            for job in posts:
+                post = dict(
+                    PostId=job["PostId"],
+                    RecruitPostId=job["RecruitPostId"],
+                    RecruitPostNam=job["RecruitPostName"],
+                    CountryName=job["CountryName"],
+                    LocationName=job["LocationName"],
+                    CategoryName=job["CategoryName"],
+                    Responsibility=job["Responsibility"],
+                    LastUpdateTime=job["LastUpdateTime"],
+                    PostURL=job["PostURL"],
+                    SourceID=job["SourceID"],
+                    IsCollect=job["IsCollect"],
+                    IsValid=job["IsValid"],
+                )
+                yield post
+        except TypeError:
+            print("=" * 30 + "解析错误" + "=" * 30)
 
     def _update_proxy(self):
         count = 0
@@ -97,14 +123,17 @@ class Spider:
             try:
                 response = self.session.get(self.proxy_url).json()
                 print(response)
-                ip = response['RESULT'][0]['ip']
-                port = response['RESULT'][0]['port']
+                ip = response["RESULT"][0]["ip"]
+                port = response["RESULT"][0]["port"]
             except Exception as e:
                 print(f"Error fetching proxy. Error: {e}")
                 print("." * 30 + "Attempting to update proxy" + "." * 30)
+                traceback.print_exc()
                 count += 1
             else:
-                self.proxy = dict(http=f"http://{ip}:{port}", https=f"http://{ip}:{port}")
+                self.proxy = dict(
+                    http=f"http://{ip}:{port}", https=f"http://{ip}:{port}"
+                )
                 print("=" * 30 + "Proxy updated" + "=" * 30)
                 break
 
@@ -114,32 +143,34 @@ class Spider:
         return data
 
     def run(self):
-        key = input("请输入要搜索的项目关键字：")
-        s = input("请输入排序方式:\n输入stars按照stars排序,输入forks按照forks排序，输入updated按照更新时间排序：")
-        file_name = f"{key}项目.xlsx"
-        self.excel_saver = ExcelSaver(column_headers=self.excel_headers, output_filename=file_name,
-                                      max_rows_per_sheet=5000)
-        query = dict(q=key, s=s, o="desc")
-        response = self.fetch(self.base_url, params=query)
-        data = self.parse_first(response)
-        self.excel_saver.save_data_item(data)
+        file_name = "腾讯岗位数据.xlsx"
+        self.excel_saver = ExcelSaver(
+            column_headers=self.excel_headers,
+            output_filename=file_name,
+            max_rows_per_sheet=5000,
+        )
         futures = []
         try:
             with ThreadPoolExecutor(max_workers=10) as executor:
-                for page in range(2, self.max_page + 1):
-                    query = dict(q=key, s=s, o="desc", p=page)
+                for page in range(1, self.max_page + 1):
+                    query = dict(pageSize=200, pageIndex=page)
                     future = executor.submit(self.task, query)
                     futures.append(future)
                 for future in futures:
-                    data = future.result()
-                    self.excel_saver.save_data_item(data)
+                    datas = future.result()
+                    if datas:
+                        for data in datas:
+                            data = list(data.values())
+                            self.excel_saver.save_data_item(data)
         except Exception as e:
             print(e)
-            print(traceback.print_exc())
+            traceback.print_exc()
         finally:
             self.excel_saver.close()
 
 
 if __name__ == "__main__":
-    spider = Spider("https://github.com/search?&type=repositories", headers={"Accept": "text/html"})
+    spider = Spider(
+        "https://careers.tencent.com/tencentcareer/api/post/Query?&language=zh-cn"
+    )
     spider.run()

@@ -47,7 +47,8 @@ class Spider:
             # If failed, try updating the proxy and fetching the response 5 times
             for _ in range(1):
                 print(f"Error fetching {url} with params:{params} using {self.proxy}.")
-                self._update_proxy()
+                if self.proxy_url:
+                    self._update_proxy()
                 response = _make_request(self.proxy)
                 if response:
                     return response
@@ -108,14 +109,13 @@ class Spider:
     def run(self):
         key = input("请输入要搜索的项目关键字：")
         s = input("请输入排序方式:\n输入stars按照stars排序,输入forks按照forks排序，输入updated按照更新时间排序：")
-        o = input("请输入排序方式:\n输入desc按照降序排序,输入asc按照升序排序：")
         file_name = f"{key}项目1.xls"
-        query = dict(q=key, s=s, o=o)
+        query = dict(q=key, s=s, o="desc")
         response = self.fetch(self.base_url, params=query)
         data = self.parse_first(response)
         self.save(data, file_name)
         for page in range(2, self.max_page + 1):
-            query = dict(q=key, s=s, o=o, p=page)
+            query = dict(q=key, s=s, o="desc", p=page)
             response = self.fetch(self.base_url, params=query)
             data = self.parse(response)
             self.save(data, file_name)
@@ -123,5 +123,5 @@ class Spider:
 
 
 if __name__ == "__main__":
-    spider = Spider("https://github.com/search?&type=repositories", headers={"Accept": "text/html"}, proxy_url="http://api.xdaili.cn/xdaili-api//greatRecharge/getGreatIp?spiderId=afea3e76c783499aaca8aa3ddd61edf7&orderno=YZ20239150188SDxj02&returnType=2&count=1")
+    spider = Spider("https://github.com/search?&type=repositories", headers={"Accept": "text/html"})
     spider.run()
