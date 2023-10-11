@@ -10,3 +10,4 @@ drill/
 *.xlsx
 *.xls
 *.csv
+.idea/
