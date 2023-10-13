@@ -134,25 +134,7 @@ class Spider:
 if __name__ == "__main__":
     spider = Spider("https://github.com/search?&type=repositories",
                     headers={"Accept": "application/json",
-                             "Referer": "https://github.com/search?q=python&type=repositories",
-                             "cookie": "_octo=GH1.1.179135992.1695187704; "
-                                       "_device_id=481314df80e638afb99b62b237270705; "
-                                       "user_session=9X647yWVgTE8cnShAMaJYwZahOZhBfMayqEs_jGdKoMC-AL5; "
-                                       "__Host-user_session_same_site=9X647yWVgTE8cnShAMaJYwZahOZhBfMayqEs_jGdKoMC"
-                                       "-AL5; logged_in=yes; dotcom_user=Liuhyi; has_recent_activity=1; "
-                                       "color_mode=%7B%22color_mode%22%3A%22auto%22%2C%22light_theme%22%3A%7B%22name"
-                                       "%22%3A%22light%22%2C%22color_mode%22%3A%22light%22%7D%2C%22dark_theme%22%3A"
-                                       "%7B%22name%22%3A%22dark%22%2C%22color_mode%22%3A%22dark%22%7D%7D; "
-                                       "preferred_color_mode=dark; tz=Asia%2FShanghai; "
-                                       "_gh_sess=FdYG2iQ9ifMPx%2Bkf41giJMEBNyBUJFBg1DK"
-                                       "%2BfTgn4yvWvmVyzhU6Z27Andd4Dck6RscHR5SqhuG47%2FNs%2BKGfAnxJubrtB4B3LARjlk"
-                                       "%2BGvcjRZQKVTTa%2FUALorVn%2BMFEbmKdvFZxPVE%2FGrpnZJS7OktoTUDZMR%2B%2FRLwm4NE0"
-                                       "%2F2nPJYozXHB%2BYAvOZwkfZlI%2FHvIm%2F7xeMUCjiA6jigrrxmSdBaODhrWGe8QSG2"
-                                       "%2FWIewlzR0cyfCNQ5jlPBCo3gZsJUpDM39yBdGqSVtZ5Tll6QAEzj0TvDDJUbfaGZYfu%2Bxe"
-                                       "%2BiCiS4ITJdUu7G%2BKVFbmkJl1Tq2c460SypQEBG7Xsvp%2BZh0SsMsn%2F"
-                                       "--E7dO3wOr2OuiLVq6--5KJ%2B0xXY1u6vB%2Fban4spRA%3D%3D",
-                             "User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 ('
-                                           'KHTML, like Gecko) Version/10.1.2 Safari/603.3.8'},
+                             "Referer": "https://github.com/search?q=python&type=repositories",},
                     proxy_url="http://api.xdaili.cn/xdaili-api//greatRecharge/getGreatIp?spiderId"
                               "=afea3e76c783499aaca8aa3ddd61edf7&orderno=YZ20239150188SDxj02&returnType=2&count=1")
     spider.run()
